@@ -14,4 +14,6 @@
 - https://github.com/tkipf/gcn/blob/master/gcn/models.py
 
 
+- ID 006 had to be removed, because we only had data of half the session
+
  

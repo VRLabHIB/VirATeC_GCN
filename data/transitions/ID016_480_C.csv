@@ -1,0 +1,12 @@
+ID,condition,start_interval,start_transition,Source,Target,Weight,trans_duration,trans_amplitude,head_rotation,table_switched,row_switched,AOI_duration_Source,pupil Diameter_Source,active_disruption_Source,passive_disruption_Source,clicked_Source,AOI_duration_Target,pupil Diameter_Target,active_disruption_Target,passive_disruptionTarget,clicked_Target
+016,C,480,503.9645,PB,1A,1,0.2913000000000352,,,,,,,,,,,,,,
+016,C,480,504.2558,1A,4A,1,0.055399999999963256,,,,,,,,,,,,,,
+016,C,480,504.3978,4A,4B,1,0.10679999999996426,,,,,,,,,,,,,,
+016,C,480,504.5046,4B,7A,1,0.17760000000004084,,,,,,,,,,,,,,
+016,C,480,504.6822,7A,4B,1,0.033699999999953434,,,,,,,,,,,,,,
+016,C,480,504.7673,4B,7A,1,0.052600000000040836,,,,,,,,,,,,,,
+016,C,480,504.8199,7A,4B,1,0.021199999999964803,,,,,,,,,,,,,,
+016,C,480,504.8411,4B,7A,1,0.02940000000000964,,,,,,,,,,,,,,
+016,C,480,504.9344,7A,4B,1,0.03370000000001028,,,,,,,,,,,,,,
+016,C,480,505.1674,4B,4A,1,0.06690000000003238,,,,,,,,,,,,,,
+016,C,480,508.1331,4A,PB,1,0.3594999999999686,,,,,,,,,,,,,,

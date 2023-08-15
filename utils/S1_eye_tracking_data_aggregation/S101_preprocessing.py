@@ -2,7 +2,8 @@ import os
 import numpy as np
 import pandas as pd
 from numpy.linalg import norm
-from utils.S1_eye_tracking_data_aggregation import helper as hf, helper
+from utils.S1_eye_tracking_data_aggregation import helper as hf
+from utils import helper
 
 
 # Class to process the dataframes / processing pipline is stated below
