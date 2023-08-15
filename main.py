@@ -38,7 +38,7 @@ def add_expertise_levels(dff):
 
 if __name__ == '__main__':
     project_path = os.path.abspath(os.getcwd())
-    S101_preprocessing.preprocess_data()
+    # S101_preprocessing.preprocess_data()
     S102_calculate_features.create_long_formats()
     print(' ')
     # S201_expertise_levels.add_expertise_levels(project_path=project_path, multilevel=False)

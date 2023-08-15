@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import numpy as np
 
-from src.S1_eye_tracking_data_aggregation.helper import locate_processed_data
+from utils.S1_eye_tracking_data_aggregation.helper import locate_processed_data
 
 
 # Class to calculate features from the dataframes / processing pipline is stated below

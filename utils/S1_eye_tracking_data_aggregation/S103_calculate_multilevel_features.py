@@ -4,7 +4,7 @@ import warnings
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 import pandas as pd
-from src.S1_eye_tracking_data_aggregation.helper import locate_processed_data
+from utils.S1_eye_tracking_data_aggregation.helper import locate_processed_data
 
 
 class MultiData:

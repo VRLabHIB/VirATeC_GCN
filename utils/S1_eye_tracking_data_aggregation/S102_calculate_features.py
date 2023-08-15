@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import numpy as np
 
-from src.S1_eye_tracking_data_aggregation.helper import locate_processed_data
+from utils.S1_eye_tracking_data_aggregation.helper import locate_processed_data
 
 
 # Class to calculate features from the dataframes / processing pipline is stated below
@@ -232,6 +232,6 @@ def create_long_formats():
 
         dff = calculate_elliptical_movement_area(dff)
 
-        df_features = df_features.append(dff)
+        df_features = pd.concat([df_features,dff], axis=0)
 
     df_features.to_csv(project_path + '//data//FeatureDataset.csv', index=False)
