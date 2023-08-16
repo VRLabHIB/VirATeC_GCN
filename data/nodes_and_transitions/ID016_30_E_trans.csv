@@ -1,0 +1,6 @@
+ID,condition,start_interval,start_transition,Source,Target,Weight,trans_duration,trans_amplitude,head_rotation,table_switched,row_switched
+016,E,30,47.34761,PB,1A,1,0.4875599999999949,,,,
+016,E,30,47.83517,1A,1B,1,0.08910000000000196,,,,
+016,E,30,48.1681,1B,2A,1,0.05702999999999747,,,,
+016,E,30,48.52357,2A,2B,1,0.0338300000000018,,,,
+016,E,30,48.89021,2B,PB,1,0.3989599999999953,,,,

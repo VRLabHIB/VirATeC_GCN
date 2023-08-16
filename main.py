@@ -14,12 +14,13 @@ if __name__ == '__main__':
     # S101_preprocessing.preprocess_data()
 
     # S102_scanpaths.create_all_transition_datasets()
-    # TODO: Create dataset with node features for x as input GCN
 
-    #S201_create_graphs_pytorch.create_graphs(project_path)
+    # S201_create_graphs_pytorch.create_graphs(project_path)
 
     dataset = S202_dataloader.load_graphs(project_path)
+
     GCN_model.run_GCN_model(dataset)
+    print(' ')
 
 
 
@@ -28,7 +29,7 @@ if __name__ == '__main__':
     # S106_graph_features.create_feature_dataframe
 
     #data_path = project_path + '//data//'
-    #df_input = pd.read_csv(data_path + 'transitions.csv')
+    #df_input = pd.read_csv(data_path + 'nodes_and_transitions.csv')
     # df_input = pd.read_csv(data_path + 'FeatureDataset.csv')
 
     #df_input = add_expertise_levels(df_input)

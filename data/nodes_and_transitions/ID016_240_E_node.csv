@@ -1,0 +1,7 @@
+ID,condition,start_interval,start_transition,Node,AOI_duration,pupil_diameter,active_disruption,passive_disruption,number_clicked
+016,E,240,267.2831,PB,13.37239999999997,,,,
+016,E,240,267.8719,4A,0.1229000000000155,,,,
+016,E,240,268.1053,2A,0.2001000000000203,,,,
+016,E,240,268.1385,5A,0.0335999999999785,,,,
+016,E,240,268.5379,2B,0.3990999999999758,,,,
+016,E,240,269.9956,PB,7.709499999999991,,,,

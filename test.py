@@ -41,3 +41,13 @@ angle = np.degrees(np.arccos(dot/norm))*sign
 #angle = np.degrees(np.arccos(np.clip(c, -1, 1)))
 
 print('Test')
+
+
+########
+node_list = set(self.dft['Source'].to_list()).union(set(self.dft['Source'].to_list()))
+node_attributes = np.random.rand(len(node_list), 2)
+
+df_nodes = pd.DataFrame(node_attributes)
+
+df_nodes.index = list(node_list)
+df_nodes.columns = node_attribute_names

@@ -35,7 +35,7 @@ class FullSessionDataset:
 
         self.df['SituationalComplexity'] = self.df['SituationalComplexity'].replace('easy', 'E')
         self.df['SituationalComplexity'] = self.df['SituationalComplexity'].replace('complex', 'C')
-        save_path = self.project_path + '//data//transitions//'
+        save_path = self.project_path + '//data//nodes_and_transitions//'
 
         self.df = self.df[self.df['GazeTargetObject'] != 'none']
 
@@ -55,6 +55,7 @@ class FullSessionDataset:
 
             # Reduce dataset to AOI intervals
             dfsub = dfsub[dfsub['GazeTargetObject'].isin(ooi_lst)].reset_index(drop=True)
+            AOI_lst = dfsub[dfsub['GazeTargetObject'].isin(ooi_lst)]['GazeTargetObject'].unique()
 
             # dfsub['PositionLeftRight'] = dfsub['GazeTargetObject'].replace({'1A':'L', '1B':'L', '4A':'L', '4B':'L',
             # '7A':'L', '7B':'L', '2A':'M', '2B':'M', '5A':'M', '5B':'M', '8A':'M', '8B':'M', '3A':'R', '3B':'R',
@@ -74,8 +75,11 @@ class FullSessionDataset:
             trans_dur_lst = list()
             weight_lst = list()
 
+            AOI_duration_lst = list()
+
             # First source
             source = dfsub['GazeTargetObject'].iloc[0]
+
 
             for i in range(1, len(dfsub)):
                 if source != dfsub['GazeTargetObject'].iloc[i]:
@@ -88,12 +92,29 @@ class FullSessionDataset:
                     cond_lst.append(cond)
                     interval_lst.append(interval)
 
+                    AOI_duration = dfsub['GazeTargetTimes'].iloc[i-1]
+                    AOI_duration_lst.append(AOI_duration)
+
                     source = dfsub['GazeTargetObject'].iloc[i]
 
             placeholder = [np.nan]*len(ID_lst)
+            placeholder_node = placeholder + [np.nan]
 
-            # TODO: create dataframe with node features: AOI Pupil etc.
+            ID_lst_node = ID_lst + [identifier]
+            cond_lst_node = cond_lst + [cond]
+            interval_lst_node = interval_lst + [interval]
+            trans_start_lst_node = trans_start_lst + [dfsub['Time'].iloc[i]]
+            source_lst_node = source_lst + [dfsub['GazeTargetObject'].iloc[i]]
+            AOI_duration_lst = AOI_duration_lst + [dfsub['GazeTargetTimes'].iloc[i]]
 
+            df_node = pd.DataFrame({'ID': ID_lst_node, 'condition': cond_lst_node, 'start_interval': interval_lst_node,
+                                    'start_transition': trans_start_lst_node,'Node': source_lst_node,
+                                    'AOI_duration': AOI_duration_lst,
+                                    'pupil_diameter': placeholder_node,
+                                    'active_disruption': placeholder_node,
+                                    'passive_disruption': placeholder_node,
+                                    'number_clicked': placeholder_node,
+                                    })
             df_trans = pd.DataFrame({'ID': ID_lst, 'condition': cond_lst, 'start_interval': interval_lst,
                                      'start_transition': trans_start_lst, 'Source': source_lst,
                                      'Target': target_lst, 'Weight': weight_lst,
@@ -102,20 +123,11 @@ class FullSessionDataset:
                                      'head_rotation': placeholder,
                                      'table_switched': placeholder,
                                      'row_switched': placeholder,
-                                     'AOI_duration_Source': placeholder,
-                                     'pupil Diameter_Source': placeholder,
-                                     'active_disruption_Source': placeholder,
-                                     'passive_disruption_Source': placeholder,
-                                     'clicked_Source':placeholder,
-                                     'AOI_duration_Target': placeholder,
-                                     'pupil Diameter_Target': placeholder,
-                                     'active_disruption_Target': placeholder,
-                                     'passive_disruptionTarget': placeholder,
-                                     'clicked_Target': placeholder,
                                      })
 
-            df_trans.to_csv(save_path + 'ID' + str(identifier) + '_' + str(interval) + '_' + str(cond) + '.csv', index=False)
-
+            df_trans.to_csv(save_path + 'ID' + str(identifier) + '_' + str(interval) + '_' + str(cond) + '_trans.csv', index=False)
+            df_node.to_csv(save_path + 'ID' + str(identifier) + '_' + str(interval) + '_' + str(cond) + '_node.csv',
+                            index=False)
 
 def create_all_transition_datasets():
     project_path = os.path.abspath(os.getcwd())
@@ -128,5 +140,5 @@ def create_all_transition_datasets():
         print('ID {}'.format(identifier))
 
         data = FullSessionDataset(name, identifier, project_path)
-        # creates transition matrices and saves them into //data//transitions//
+        # creates transition matrices and saves them into //data//nodes_and_transitions//
         data.create_one_transition_dataset()

@@ -26,25 +26,27 @@ def run_GCN_model(dataset):
 
     from torch_geometric.loader import DataLoader
 
-    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=128, shuffle=False)
 
     class GCN(torch.nn.Module):
         def __init__(self, hidden_channels):
             super(GCN, self).__init__()
             torch.manual_seed(12345)
-            self.conv1 = GCNConv(dataset.num_node_features, hidden_channels)
+            num_node_features = 1
+
+            self.conv1 = GCNConv(num_node_features, hidden_channels) # 1= num node features
             self.conv2 = GCNConv(hidden_channels, hidden_channels)
             self.conv3 = GCNConv(hidden_channels, hidden_channels)
-            self.lin = Linear(hidden_channels, dataset.num_classes)
+            self.lin = Linear(hidden_channels, 2) # 2= num classes
 
         def forward(self, x, edge_index, edge_weight, batch):
             # 1. Obtain node embeddings
             x = self.conv1(x, edge_index, edge_weight)
             x = x.relu()
-            x = self.conv2(x, edge_index)
+            x = self.conv2(x, edge_index, edge_weight)
             x = x.relu()
-            x = self.conv3(x, edge_index)
+            x = self.conv3(x, edge_index, edge_weight)
 
             # 2. Readout layer
             x = global_mean_pool(x, batch)  # [batch_size, hidden_channels]
@@ -62,7 +64,7 @@ def run_GCN_model(dataset):
         print(data)
         print(' ')
 
-        model = GCN(hidden_channels=64)
+        model = GCN(hidden_channels=128)
         print(model)
         print(' ')
 
@@ -92,7 +94,7 @@ def run_GCN_model(dataset):
             pred_lst = list()
             true_lst = list()
             for data in loader:  # Iterate in batches over the training/test dataset.
-                out = model(data.x, data.edge_index, data.batch)
+                out = model(data.x, data.edge_index,data.edge_weight, data.batch)
                 pred = out.argmax(dim=1)  # Use the class with highest probability.
                 correct += int((pred == data.y).sum())  # Check against ground-truth labels.
 
@@ -102,8 +104,8 @@ def run_GCN_model(dataset):
             return correct / len(loader.dataset)  # Derive ratio of correct predictions.
 
 
-        for epoch in range(1, 171):
+        for epoch in range(1, 200):
             train()
-            train_acc = test(train_loader)
+            train_acc = test(train_loader, epoch)
             test_acc = test(test_loader, epoch)
             print(f'Epoch: {epoch:03d}, Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}')
