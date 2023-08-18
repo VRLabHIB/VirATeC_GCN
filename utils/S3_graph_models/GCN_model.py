@@ -5,20 +5,21 @@ from torch_geometric.datasets import TUDataset
 import numpy as np
 from torch.nn import Linear
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv
+from torch_geometric.nn import GCNConv, GraphConv, TAGConv
 from torch_geometric.nn import global_mean_pool
 from torch_geometric.data import Data
-
+from torch_geometric.nn.conv.gcn_conv import gcn_norm
 
 def run_GCN_model(dataset):
     # TODO: different models can either use edge weights or edged attributes, but always need node features
     torch.manual_seed(12345)
-    random.seed(12345)
+    #random.seed(12345)
 
     random.shuffle(dataset)
 
-    train_dataset = dataset[:150]
-    test_dataset = dataset[150:]
+    train_test_split = 0.8
+    train_dataset = dataset[:int(train_test_split*len(dataset))]
+    test_dataset = dataset[int(train_test_split*len(dataset)):]
 
     print(f'Number of training graphs: {len(train_dataset)}')
     print(f'Number of test graphs: {len(test_dataset)}')
@@ -26,22 +27,24 @@ def run_GCN_model(dataset):
 
     from torch_geometric.loader import DataLoader
 
-    train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=128, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
     class GCN(torch.nn.Module):
         def __init__(self, hidden_channels):
             super(GCN, self).__init__()
             torch.manual_seed(12345)
-            num_node_features = 1
+            num_node_features = 3
 
-            self.conv1 = GCNConv(num_node_features, hidden_channels) # 1= num node features
-            self.conv2 = GCNConv(hidden_channels, hidden_channels)
-            self.conv3 = GCNConv(hidden_channels, hidden_channels)
+            self.conv1 = TAGConv(num_node_features, hidden_channels) # 1= num node features
+            self.conv2 = TAGConv(hidden_channels, hidden_channels)
+            self.conv3 = TAGConv(hidden_channels, hidden_channels)
             self.lin = Linear(hidden_channels, 2) # 2= num classes
+
 
         def forward(self, x, edge_index, edge_weight, batch):
             # 1. Obtain node embeddings
+            #self._gcn_norm = 'both'
             x = self.conv1(x, edge_index, edge_weight)
             x = x.relu()
             x = self.conv2(x, edge_index, edge_weight)
@@ -64,7 +67,7 @@ def run_GCN_model(dataset):
         print(data)
         print(' ')
 
-        model = GCN(hidden_channels=128)
+        model = GCN(hidden_channels=264)
         print(model)
         print(' ')
 
@@ -72,7 +75,7 @@ def run_GCN_model(dataset):
 
         display(Javascript('''google.colab.output.setIframeHeight(0, true, {maxHeight: 300})'''))
 
-        model = GCN(hidden_channels=64)
+        model = GCN(hidden_channels=264)
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
         criterion = torch.nn.CrossEntropyLoss()
 
@@ -80,6 +83,7 @@ def run_GCN_model(dataset):
             model.train()
 
             for data in train_loader:  # Iterate in batches over the training dataset.
+                data.edge_index, data.edge_weight = gcn_norm(data.edge_index, data.edge_weight)
                 out = model(data.x, data.edge_index, data.edge_weight, data.batch)  # Perform a single forward pass.
                 loss = criterion(out, data.y)  # Compute the loss.
                 loss.backward()  # Derive gradients.
@@ -94,7 +98,8 @@ def run_GCN_model(dataset):
             pred_lst = list()
             true_lst = list()
             for data in loader:  # Iterate in batches over the training/test dataset.
-                out = model(data.x, data.edge_index,data.edge_weight, data.batch)
+                data.edge_index, data.edge_weight = gcn_norm(data.edge_index, data.edge_weight)
+                out = model(data.x, data.edge_index, data.edge_weight, data.batch)
                 pred = out.argmax(dim=1)  # Use the class with highest probability.
                 correct += int((pred == data.y).sum())  # Check against ground-truth labels.
 

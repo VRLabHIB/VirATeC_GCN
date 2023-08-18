@@ -85,22 +85,37 @@ class Datasets:
         y = self.get_y()
         edge_attr = ['weight'] + edge_attribute_names
 
+        aoi_lst = ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B',
+                   '7A', '7B', '8A', '8B', '9A', '9B', 'PB']
+
         # Modify adjacency data frame
         dftt = pd.concat([self.dft[['Source', 'Target']], self.dft[edge_attr]], axis=1)
         self.dft = dftt.groupby(['Source', 'Target']).sum().reset_index()
 
+        for source in aoi_lst:
+            for target in aoi_lst:
+                if source != target:
+                    if np.logical_and(source not in self.dft['Source'].values, target not in self.dft['Target'].values):
+                        zeros = [0] * (len(edge_attribute_names) + 1)
+                        self.dft.loc[len(self.dft)] = [source, target] + zeros
+
         # Modify node dataframe
         dfnn = pd.concat([self.dfn[['Node']], self.dfn[node_attribute_names]], axis=1)
         self.dfn = dfnn.groupby(['Node']).sum().reset_index()
+
+        for aoi in aoi_lst:
+            if aoi not in self.dfn['Node'].values:
+                zeros = [0] * len(node_attribute_names)
+                self.dfn.loc[len(self.dfn)] = [aoi] + zeros
 
         # Create graph
         self.create_undirected_graph_with_networkx(edge_attr)
         self.add_note_attributes_to_networkx()
 
         # Create Data format to save
-        data = from_networkx(self.G, group_node_attrs=node_attribute_names, group_edge_attrs=edge_attr) # TODO add as edge weights
+        data = from_networkx(self.G, group_node_attrs=node_attribute_names, group_edge_attrs=edge_attr)
         data['y'] = y  # Add complexity label
-        edge_weights = data['edge_attr'][:,0]
+        edge_weights = data['edge_attr'][:, 0]
         data.edge_weight = edge_weights
 
         return data
@@ -120,9 +135,9 @@ def create_graphs(project_path):
 
         data = Datasets(trans_name, node_name, identifier, project_path)
 
-        name = trans_name.split('.')[0].rsplit('_',1)[0]
+        name = trans_name.split('.')[0].rsplit('_', 1)[0]
         if len(data.get_data()) != 0:
             edge_attribute_names = ['trans_duration']
-            node_attribute_names = ['AOI_duration']
+            node_attribute_names = ['AOI_duration', 'clicked', 'pupil_diameter']
             graph = data.create_graph(edge_attribute_names, node_attribute_names)
             torch.save(graph, project_path + '\\data\\graphs\\' + name + '.pt')

@@ -27,15 +27,27 @@ class FullSessionDataset:
     def get_ID(self):
         return self.ID
 
+    def calculate_head_direction_amplitude(self, df_sub):
+        ampl = np.abs(np.max(df_sub['HeadDirectionYAngle']) - np.min(df_sub['HeadDirectionYAngle']))
+
+        return ampl
+
     def create_one_transition_dataset(self):
+        save_path = self.project_path + '//data//nodes_and_transitions//'
+
+        test = self.df.copy()
+
+        baselines_pupil_diameter = [np.nanmean(self.df['LeftPupilSize']), np.nanmean(self.df['RightPupilSize'])]
+
         # Remove most variables to speed up the process and rename object variables
         self.df = self.df[['Time', 'GazeTargetObject', 'GazeTargetTimes', 'SituationalComplexity',
+                           'ControllerClicked', 'LeftPupilSize', 'RightPupilSize',
                            '1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B',
                            '7A', '7B', '8A', '8B', '9A', '9B']].copy()
 
+        self.df['ControllerClicked'] = self.df['ControllerClicked'].astype(bool)
         self.df['SituationalComplexity'] = self.df['SituationalComplexity'].replace('easy', 'E')
         self.df['SituationalComplexity'] = self.df['SituationalComplexity'].replace('complex', 'C')
-        save_path = self.project_path + '//data//nodes_and_transitions//'
 
         self.df = self.df[self.df['GazeTargetObject'] != 'none']
 
@@ -55,14 +67,6 @@ class FullSessionDataset:
 
             # Reduce dataset to AOI intervals
             dfsub = dfsub[dfsub['GazeTargetObject'].isin(ooi_lst)].reset_index(drop=True)
-            AOI_lst = dfsub[dfsub['GazeTargetObject'].isin(ooi_lst)]['GazeTargetObject'].unique()
-
-            # dfsub['PositionLeftRight'] = dfsub['GazeTargetObject'].replace({'1A':'L', '1B':'L', '4A':'L', '4B':'L',
-            # '7A':'L', '7B':'L', '2A':'M', '2B':'M', '5A':'M', '5B':'M', '8A':'M', '8B':'M', '3A':'R', '3B':'R',
-            # '6A':'R', '6B':'R', '9A':'R', '9B':'R'})
-            # dfsub['PositionFrontBack'] = dfsub['GazeTargetObject'].replace({'1A':'L', '1B':'L', '4A':'L', '4B':'L',
-            # '7A':'L', '7B':'L', '2A':'M', '2B':'M', '5A':'M', '5B':'M', '8A':'M', '8B':'M', '3A':'R', '3B':'R',
-            # '6A':'R', '6B':'R', '9A':'R', '9B':'R'})
 
             # List of transition attributes
             ID_lst = list()
@@ -76,12 +80,16 @@ class FullSessionDataset:
             weight_lst = list()
 
             AOI_duration_lst = list()
+            clicked_lst = list()
+            pupil_diameter_lst = list()
+
 
             # First source
             source = dfsub['GazeTargetObject'].iloc[0]
 
-
+            index = 0
             for i in range(1, len(dfsub)):
+                index+=1
                 if source != dfsub['GazeTargetObject'].iloc[i]:
                     trans_start_lst.append(dfsub['Time'].iloc[i - 1])
                     trans_dur_lst.append(dfsub['Time'].iloc[i] - dfsub['Time'].iloc[i - 1])
@@ -95,11 +103,26 @@ class FullSessionDataset:
                     AOI_duration = dfsub['GazeTargetTimes'].iloc[i-1]
                     AOI_duration_lst.append(AOI_duration)
 
+                    dfs = dfsub.iloc[i-index:i]
+                    # Clicks in general #TODO: Only clicks on students
+                    if any(dfs['ControllerClicked']):
+                        clicked_lst.append(1)
+                    else:
+                        clicked_lst.append(0)
+
+                    # Pupil diameter
+                    dfs['LeftPupilBaselineCorrected'] = dfs['LeftPupilSize']-baselines_pupil_diameter[0]
+                    dfs['RightPupilBaselineCorrected'] = dfs['RightPupilSize']-baselines_pupil_diameter[1]
+                    mean_pupil_diameter = np.nanmean(dfs[['LeftPupilBaselineCorrected','RightPupilBaselineCorrected']], axis=1)
+                    pupil_diameter_lst.append(np.nanmean(mean_pupil_diameter))
+
                     source = dfsub['GazeTargetObject'].iloc[i]
+                    index -= index #reset index
 
             placeholder = [np.nan]*len(ID_lst)
             placeholder_node = placeholder + [np.nan]
 
+            #Last object in dataframe
             ID_lst_node = ID_lst + [identifier]
             cond_lst_node = cond_lst + [cond]
             interval_lst_node = interval_lst + [interval]
@@ -107,10 +130,24 @@ class FullSessionDataset:
             source_lst_node = source_lst + [dfsub['GazeTargetObject'].iloc[i]]
             AOI_duration_lst = AOI_duration_lst + [dfsub['GazeTargetTimes'].iloc[i]]
 
+            dfs = dfsub.iloc[i - index:i]
+            # Clicks in general #TODO: Only clicks on students
+            if any(dfs['ControllerClicked']):
+                clicked_lst.append(1)
+            else:
+                clicked_lst.append(0)
+
+            # Pupil diameter
+            dfs['LeftPupilBaselineCorrected'] = dfs['LeftPupilSize'] - baselines_pupil_diameter[0]
+            dfs['RightPupilBaselineCorrected'] = dfs['RightPupilSize'] - baselines_pupil_diameter[1]
+            mean_pupil_diameter = np.nanmean(dfs[['LeftPupilBaselineCorrected', 'RightPupilBaselineCorrected']], axis=1)
+            pupil_diameter_lst.append(np.nanmean(mean_pupil_diameter))
+
             df_node = pd.DataFrame({'ID': ID_lst_node, 'condition': cond_lst_node, 'start_interval': interval_lst_node,
                                     'start_transition': trans_start_lst_node,'Node': source_lst_node,
                                     'AOI_duration': AOI_duration_lst,
-                                    'pupil_diameter': placeholder_node,
+                                    'clicked': clicked_lst,
+                                    'pupil_diameter': pupil_diameter_lst,
                                     'active_disruption': placeholder_node,
                                     'passive_disruption': placeholder_node,
                                     'number_clicked': placeholder_node,
