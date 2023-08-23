@@ -18,9 +18,9 @@ import matplotlib.pyplot as plt
 
 def run_GCN_model(dataset):
     train_test_split = 0.8
-    batch_size = 50
-    hidden_channels = 50
-    learning_rate = 0.001
+    batch_size = 5
+    hidden_channels = 10
+    learning_rate = 0.01
     nepoch = 200
 
     # torch.manual_seed(12345)
@@ -29,12 +29,14 @@ def run_GCN_model(dataset):
     random.shuffle(dataset)
     print('len of dataset {}', len(dataset))
 
-    #labels = list()
-    #for data in dataset:
-    #    labels.append(data.y)
-    #df_labels = pd.DataFrame({'index': np.arange(len(dataset)), 'label':labels})
-    #n_label_1 = len(df_labels[df_labels['label'] == 1])
+    labels = list()
+    for data in dataset:
+        labels.append(data.y)
+    df_labels = pd.DataFrame({'index': np.arange(len(dataset)), 'label':labels})
+    n_label_1 = len(df_labels[df_labels['label'] == 1])
+    n_label_0 = len(df_labels[df_labels['label'] == 0])
 
+    ratio = n_label_1/len(dataset)
     train_dataset = dataset[:int(train_test_split * len(dataset))]
     test_dataset = dataset[int(train_test_split * len(dataset)):]
 
@@ -56,11 +58,11 @@ def run_GCN_model(dataset):
             num_node_features = 4
 
             #self.batch_norm = BatchNorm1d(hidden_channels) #, affine=False)
-            self.conv1 = TAGConv(num_node_features, hidden_channels)  # 1= num node features
+            self.conv1 = GCNConv(num_node_features, hidden_channels)  # 1= num node features
             self.norm1 = GraphNorm(hidden_channels)
 
-            self.conv2 = TAGConv(hidden_channels, hidden_channels)
-            self.norm2 = GraphNorm(hidden_channels)
+            #self.conv2 = TAGConv(hidden_channels, hidden_channels)
+            #self.norm2 = GraphNorm(hidden_channels)
 
             #self.conv3 = TAGConv(hidden_channels*2, hidden_channels)
             #self.norm3 = PairNorm(hidden_channels)

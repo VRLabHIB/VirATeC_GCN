@@ -149,17 +149,19 @@ class FullSessionDataset:
                                     'AOI_duration': AOI_duration_lst,
                                     'clicked': clicked_lst,
                                     'pupil_diameter': pupil_diameter_lst,
-                                    'active_disruption': placeholder_node,
-                                    'passive_disruption': placeholder_node,
+                                    'click_duration?': placeholder_node,
+                                    'feature_location': placeholder_node,
+                                    'controller_direction(pointing)_angle': placeholder_node,
+                                    'controller_duration_on_AOI': placeholder_node,
+                                    'duration_time_until_first fixation': placeholder_node,
                                     })
             df_trans = pd.DataFrame({'ID': ID_lst, 'condition': cond_lst, 'start_interval': interval_lst,
                                      'start_transition': trans_start_lst, 'Source': source_lst,
                                      'Target': target_lst, 'Weight': weight_lst,
                                      'trans_duration': trans_dur_lst,
                                      'trans_amplitude': placeholder,
+                                     'trans_velocity': placeholder,
                                      'head_rotation': placeholder,
-                                     'table_switched': placeholder,
-                                     'row_switched': placeholder,
                                      })
 
             df_trans.to_csv(save_path + 'ID' + str(identifier) + '_' + str(interval) + '_' + str(cond) + '_trans.csv', index=False)

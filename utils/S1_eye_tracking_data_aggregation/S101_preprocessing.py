@@ -96,6 +96,54 @@ class Data:
         self.df['ControllerTargetObject'] = self.df['ControllerTargetObject'].str.replace('Child ', '')
         self.df['ControllerTargetObject'] = self.df['ControllerTargetObject'].str.replace(' ', '')
 
+    def interpolate_AOI_objects(self, target='gaze'):
+        """
+        :param target: is either 'gaze' or 'controller'
+        :return: self.df processed
+        """
+        if target == 'gaze':
+            object_var = 'GazeTargetObject'
+        if target == 'controller':
+            object_var = 'ControllerTargetObject'
+
+        object_vector = self.df[object_var].copy()
+        # Remove single occurring aois
+        if object_vector[0] != object_vector[1]:
+            object_vector[0] = 'none'
+
+        if object_vector[len(object_vector) - 1] != object_vector[len(object_vector) - 2]:
+            object_vector[len(object_vector) - 1] = 'none'
+
+        for row in range(1, len(self.df) - 1):
+            aoi = object_vector[row]
+            if aoi != 'none':
+                if np.logical_and(aoi != object_vector[row - 1], aoi != object_vector[row + 1]):
+                    object_vector[row] = 'none'
+
+        # Interpolate consecutive aois with max break of 2 nones
+        # Find first aoi
+        row = 0
+        while object_vector[row] == 'none':
+            row += 1
+        # Now interpolate
+        while row < len(object_vector):
+            if object_vector[row] == 'none':
+                last_aoi = object_vector[row - 1]
+
+                length = 0
+                while np.logical_and(row < len(object_vector)-1, object_vector[row] == 'none'):
+                    row += 1
+                    length += 1
+
+                next_aoi = object_vector[row]
+
+                if np.logical_and(last_aoi == next_aoi, length < 3):
+                    object_vector[row - length:row] = last_aoi
+
+            row += 1
+
+        self.df[object_var] = object_vector
+
     def calculate_gaze_times(self):
         gaze_time_lst = list()
         gaze_unit_lst = list()
@@ -151,13 +199,14 @@ class Data:
 
         id_number = int(ID.split('D')[1])
 
-        self.df.insert(len(self.df.columns), 'expert_level', [df_q[df_q['ID'] == id_number]['Expert?'].values[0]]*len(self.df))
-
+        self.df.insert(len(self.df.columns), 'expert_level',
+                       [df_q[df_q['ID'] == id_number]['Expert?'].values[0]] * len(self.df))
 
 
     def save(self):
         os.chdir(r'V:\VirATeC\data\VirATeC_GCN\1_full_sessions')
         self.df.to_csv(self.ID + '.csv', index=False)
+
 
 def mask_disengagement_events(df, dstr):
     for i, start, end in zip(np.arange(20), np.arange(0, 571, 30), np.arange(30, 601, 30)):
@@ -207,8 +256,15 @@ def preprocess_data():
         right_tr_lst.append(right_tr)
 
         data.clean_gaze_target()
+        data.interpolate_AOI_objects('gaze')
         data.calculate_gaze_times()
+
+        t = data.get_data()
+
         data.clean_controller_target()
+        data.interpolate_AOI_objects('controller')
+        # data.calculate_gaze_times() #TODO write method also for controller objects
+
         data.calculate_head_directionY_angle()
 
         data.add_disengagement_information()
