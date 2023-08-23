@@ -9,7 +9,7 @@ from utils.helper import locate_processed_data
 # Class to calculate features from the dataframes / processing pipline is stated below
 class FullSessionDataset:
     def __init__(self, name, identifier, project_path):
-        os.chdir(r'V:\VirATeC\data\VirATeC_NSR\1_full_sessions')
+        os.chdir(r'V:\VirATeC\data\VirATeC_GCN\1_full_sessions')
         self.df = pd.read_csv(name, low_memory=False)
         self.ID = identifier
         self.project_path = project_path
@@ -41,7 +41,7 @@ class FullSessionDataset:
 
         # Remove most variables to speed up the process and rename object variables
         self.df = self.df[['Time', 'GazeTargetObject', 'GazeTargetTimes', 'SituationalComplexity',
-                           'ControllerClicked', 'LeftPupilSize', 'RightPupilSize',
+                           'ControllerClicked', 'LeftPupilSize', 'RightPupilSize', 'expert_level',
                            '1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B',
                            '7A', '7B', '8A', '8B', '9A', '9B']].copy()
 
@@ -58,7 +58,7 @@ class FullSessionDataset:
 
             # Select time interval and save target variable (complexity)
             dfsub = self.df[np.logical_and(self.df['Time'] >= start, self.df['Time'] < start + 30)].copy()
-            cond = dfsub['SituationalComplexity'].iloc[0]
+            cond = dfsub['expert_level'].iloc[0]
 
             # Rename and determine AOIs
             dfsub['GazeTargetObject'] = dfsub['GazeTargetObject'].replace('PresentationBoard', 'PB')
@@ -104,15 +104,16 @@ class FullSessionDataset:
                     AOI_duration_lst.append(AOI_duration)
 
                     dfs = dfsub.iloc[i-index:i]
-                    # Clicks in general #TODO: Only clicks on students
+
+                    # Clicks on AOI
                     if any(dfs['ControllerClicked']):
                         clicked_lst.append(1)
                     else:
                         clicked_lst.append(0)
 
                     # Pupil diameter
-                    dfs['LeftPupilBaselineCorrected'] = dfs['LeftPupilSize']-baselines_pupil_diameter[0]
-                    dfs['RightPupilBaselineCorrected'] = dfs['RightPupilSize']-baselines_pupil_diameter[1]
+                    dfs['LeftPupilBaselineCorrected'] = dfs['LeftPupilSize'].copy()-baselines_pupil_diameter[0]
+                    dfs['RightPupilBaselineCorrected'] = dfs['RightPupilSize'].copy()-baselines_pupil_diameter[1]
                     mean_pupil_diameter = np.nanmean(dfs[['LeftPupilBaselineCorrected','RightPupilBaselineCorrected']], axis=1)
                     pupil_diameter_lst.append(np.nanmean(mean_pupil_diameter))
 
@@ -131,7 +132,7 @@ class FullSessionDataset:
             AOI_duration_lst = AOI_duration_lst + [dfsub['GazeTargetTimes'].iloc[i]]
 
             dfs = dfsub.iloc[i - index:i]
-            # Clicks in general #TODO: Only clicks on students
+            # Clicks on AOI
             if any(dfs['ControllerClicked']):
                 clicked_lst.append(1)
             else:
@@ -150,7 +151,6 @@ class FullSessionDataset:
                                     'pupil_diameter': pupil_diameter_lst,
                                     'active_disruption': placeholder_node,
                                     'passive_disruption': placeholder_node,
-                                    'number_clicked': placeholder_node,
                                     })
             df_trans = pd.DataFrame({'ID': ID_lst, 'condition': cond_lst, 'start_interval': interval_lst,
                                      'start_transition': trans_start_lst, 'Source': source_lst,

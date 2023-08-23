@@ -2,7 +2,6 @@ import os
 import numpy as np
 import pandas as pd
 from numpy.linalg import norm
-from utils.S1_eye_tracking_data_aggregation import helper as hf
 from utils import helper
 
 
@@ -39,7 +38,7 @@ class Data:
         self.df['Time'] = self.df['Time'].astype(float)
         self.df = self.df[self.df['Time'] <= 630]
 
-        self.df.insert(1, "TimeDiff", hf.calculate_time_diff(self.df))
+        self.df.insert(1, "TimeDiff", helper.calculate_time_diff(self.df))
 
     def filter_blinks(self):
         self.df['LeftPupilSize'] = np.where(self.df['LeftPupilSize'] <= 0, np.nan, self.df['LeftPupilSize'])
@@ -142,10 +141,23 @@ class Data:
 
         self.df = mask_disengagement_events(self.df, dstr)
 
-    def save(self):
-        os.chdir(r'V:\VirATeC\data\VirATeC_NSR\1_full_sessions')
-        self.df.to_csv(self.ID + '.csv', index=False)
+    def add_expertise_levels(self, ID):
+        os.chdir(r'V:\VirATeC\data\VirATeC_GCN\2_questionnaire')
+        df_q = pd.read_csv(r"pre_post.csv", sep=";", index_col=False, decimal=',', encoding='ISO-8859-1')
+        df_q.insert(1, 'Expert?', np.where(df_q['years'] > 0, 1, 0))
+        df_q = df_q[['ID', 'Expert?']]
 
+        df_q['ID'] = df_q['ID'].astype(int)
+
+        id_number = int(ID.split('D')[1])
+
+        self.df.insert(len(self.df.columns), 'expert_level', [df_q[df_q['ID'] == id_number]['Expert?'].values[0]]*len(self.df))
+
+
+
+    def save(self):
+        os.chdir(r'V:\VirATeC\data\VirATeC_GCN\1_full_sessions')
+        self.df.to_csv(self.ID + '.csv', index=False)
 
 def mask_disengagement_events(df, dstr):
     for i, start, end in zip(np.arange(20), np.arange(0, 571, 30), np.arange(30, 601, 30)):
@@ -200,6 +212,7 @@ def preprocess_data():
         data.calculate_head_directionY_angle()
 
         data.add_disengagement_information()
+        data.add_expertise_levels(ID)
         df = data.get_data()
 
         df_stats = helper.calculate_object_stats(df)

@@ -1,0 +1,6 @@
+ID,condition,start_interval,start_transition,Source,Target,Weight,trans_duration,trans_amplitude,head_rotation,table_switched,row_switched
+016,0,240,267.2831,PB,4A,1,0.38510000000002265,,,,
+016,0,240,267.8719,4A,2A,1,0.0665000000000191,,,,
+016,0,240,268.1053,2A,5A,1,0.0332000000000221,,,,
+016,0,240,268.1385,5A,2B,1,0.033599999999978536,,,,
+016,0,240,268.5379,2B,PB,1,0.36590000000001055,,,,

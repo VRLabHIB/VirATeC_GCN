@@ -56,7 +56,7 @@ def locate_node_data(project_path):
 def locate_graph_data(project_path):
     data_path = project_path + '\\data\\graphs\\'
     os.chdir(data_path)
-    lst = glob.glob("*")
+    lst = glob.glob("*.pt")
 
     df_lst = pd.DataFrame({'name': lst})
     df_lst['ID'] = df_lst['name'].str.split('.', expand=True).iloc[:, 0]
@@ -247,3 +247,4 @@ def from_networkx(
         data.num_nodes = G.number_of_nodes()
 
     return data
+
