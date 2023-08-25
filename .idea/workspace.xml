@@ -113,7 +113,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/main.py</url>
-          <line>36</line>
+          <line>35</line>
           <option name="timeStamp" value="14" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
@@ -123,23 +123,13 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/main.py</url>
-          <line>22</line>
+          <line>21</line>
           <option name="timeStamp" value="47" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/utils/S1_eye_tracking_data_aggregation/S102_scanpaths.py</url>
-          <line>39</line>
-          <option name="timeStamp" value="78" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/utils/S1_eye_tracking_data_aggregation/S101_preprocessing.py</url>
-          <line>263</line>
-          <option name="timeStamp" value="107" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/utils/S1_eye_tracking_data_aggregation/S101_preprocessing.py</url>
-          <line>267</line>
-          <option name="timeStamp" value="108" />
+          <url>file://$PROJECT_DIR$/main.py</url>
+          <line>14</line>
+          <option name="timeStamp" value="153" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

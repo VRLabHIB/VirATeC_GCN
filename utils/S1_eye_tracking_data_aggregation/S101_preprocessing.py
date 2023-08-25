@@ -66,6 +66,8 @@ class Data:
         return left_tr, right_tr
 
     def calculate_head_directionY_angle(self):
+        # The head direction Y angle (angular difference from a straight forward head position)
+        # Unity: Left-handed coordinate system with x=left/right, y=up/down, z=forward/backward
         z = np.array([np.zeros(len(self.df)), np.ones(len(self.df))]).T
         v = self.df[['HeadDirectionX', 'HeadDirectionZ']].to_numpy()
 
@@ -76,25 +78,19 @@ class Data:
 
         self.df.insert(8, 'HeadDirectionYAngle', angle)
 
-    def clean_gaze_target(self):
-        lst = list(self.df[self.df['GazeTargetObject'].str.startswith('Child')]['GazeTargetObject'].unique())
+    def clean_aoi_target(self, target):
+        if target == 'gaze':
+            object_var = 'GazeTargetObject'
+        if target == 'controller':
+            object_var = 'ControllerTargetObject'
+
+        lst = list(self.df[self.df[object_var].str.startswith('Child')][object_var].unique())
         lst.append('PresentationBoard')
 
-        self.df['GazeTargetObject'] = np.where(self.df['GazeTargetObject'].isin(lst), self.df['GazeTargetObject'],
+        self.df[object_var] = np.where(self.df[object_var].isin(lst), self.df[object_var],
                                                'none')
-        self.df['GazeTargetObject'] = self.df['GazeTargetObject'].str.replace('Child ', '')
-        self.df['GazeTargetObject'] = self.df['GazeTargetObject'].str.replace(' ', '')
-
-    def clean_controller_target(self):
-        lst = list(
-            self.df[self.df['ControllerTargetObject'].str.startswith('Child')]['ControllerTargetObject'].unique())
-        lst.append('PresentationBoard')
-
-        self.df['ControllerTargetObject'] = np.where(self.df['ControllerTargetObject'].isin(lst),
-                                                     self.df['ControllerTargetObject'],
-                                                     'none')
-        self.df['ControllerTargetObject'] = self.df['ControllerTargetObject'].str.replace('Child ', '')
-        self.df['ControllerTargetObject'] = self.df['ControllerTargetObject'].str.replace(' ', '')
+        self.df[object_var] = self.df[object_var].str.replace('Child ', '')
+        self.df[object_var] = self.df[object_var].str.replace(' ', '')
 
     def interpolate_AOI_objects(self, target='gaze'):
         """
@@ -144,24 +140,31 @@ class Data:
 
         self.df[object_var] = object_vector
 
-    def calculate_gaze_times(self):
-        gaze_time_lst = list()
-        gaze_unit_lst = list()
+    def calculate_aoi_times(self, target):
+        if target == 'gaze':
+            object_var = 'GazeTargetObject'
+            column_index = [12, 13]
+        if target == 'controller':
+            object_var = 'ControllerTargetObject'
+            column_index = [19, 20]
+
+        time_lst = list()
+        unit_lst = list()
         i = 0
         start_ooi = 'start'
         start_count = 0
         start_time = 0
         while i < len(self.df):
-            ooi = self.df['GazeTargetObject'].iloc[i]
+            ooi = self.df[object_var].iloc[i]
 
             if ooi != start_ooi:
                 length = i - start_count
                 duration = self.df['Time'].iloc[i] - start_time
                 for j in range(length):
-                    gaze_time_lst.append(duration)
-                    gaze_unit_lst.append(j + 1)
+                    time_lst.append(duration)
+                    unit_lst.append(j + 1)
 
-                start_ooi = self.df['GazeTargetObject'].iloc[i]
+                start_ooi = self.df[object_var].iloc[i]
                 start_count = i
                 start_time = self.df['Time'].iloc[i]
 
@@ -169,12 +172,38 @@ class Data:
         duration = self.df['Time'].iloc[len(self.df) - 1] - start_time
         j = 1
         for k in range(start_count, len(self.df)):
-            gaze_time_lst.append(duration)
-            gaze_unit_lst.append(j)
+            time_lst.append(duration)
+            unit_lst.append(j)
             j += 1
 
-        self.df.insert(12, 'GazeTargetTimes', gaze_time_lst)
-        self.df.insert(13, 'GazeTargetUnit', gaze_unit_lst)
+        self.df.insert(column_index[0], object_var + 'Times', time_lst)
+        self.df.insert(column_index[1], object_var + 'Unit', unit_lst)
+
+    def calculate_distance_to_gazed_aoi(self):
+        start_gaze = self.df[['HeadPositionX', 'HeadPositionY', 'HeadPositionZ']].to_numpy()
+        end_gaze = self.df[['GazeHitPointX', 'GazeHitPointY', 'GazeHitPointZ']].to_numpy()
+        squared_dist_gaze = np.sum((end_gaze - start_gaze) ** 2, axis=1)
+        dist_gaze = np.sqrt(squared_dist_gaze)
+        self.df.insert(17, 'RayDistanceGaze', dist_gaze)
+
+        start_controller = self.df[['RightControllerPositionX', 'RightControllerPositionY', 'RightControllerPositionZ']].to_numpy()
+        end_controller = self.df[['ControllerHitPointX', 'ControllerHitPointY', 'ControllerHitPointZ']].to_numpy()
+        squared_dist_controller = np.sum((end_controller - start_controller) ** 2, axis=1)
+        dist_controller = np.sqrt(squared_dist_controller)
+        self.df.insert(len(self.df.columns), 'RayDistanceController', dist_controller)
+
+    def add_seating_information(self):
+        t = self.df.copy()
+        column_index = [14, 15]
+        aoi_lst = ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B', '7A', '7B', '8A', '8B',
+                    '9A', '9B', 'PresentationBoard']
+        row_numbers =[ 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 0]
+        loc_numbers = [-1, -1, 0, 0, 1, 1, -1, -1, 0, 0, 1, 1, -1, -1, 0, 0, 1, 1, 0]
+
+        df_seating = pd.DataFrame({'GazeTargetObject': aoi_lst, 'SeatingRowGazeTarget': row_numbers,
+                                   'SeatingLocGazeTarget': loc_numbers})
+
+        self.df = self.df.merge(df_seating, on='GazeTargetObject', how='left')
 
     def add_disengagement_information(self):
         stud_lst = ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B', '7A', '7B', '8A', '8B',
@@ -199,9 +228,8 @@ class Data:
 
         id_number = int(ID.split('D')[1])
 
-        self.df.insert(len(self.df.columns), 'expert_level',
+        self.df.insert(len(self.df.columns), 'ExpertLevel',
                        [df_q[df_q['ID'] == id_number]['Expert?'].values[0]] * len(self.df))
-
 
     def save(self):
         os.chdir(r'V:\VirATeC\data\VirATeC_GCN\1_full_sessions')
@@ -255,16 +283,16 @@ def preprocess_data():
         left_tr_lst.append(left_tr)
         right_tr_lst.append(right_tr)
 
-        data.clean_gaze_target()
+        data.clean_aoi_target('gaze')
         data.interpolate_AOI_objects('gaze')
-        data.calculate_gaze_times()
+        data.calculate_aoi_times('gaze')
+        data.calculate_distance_to_gazed_aoi()
 
-        t = data.get_data()
-
-        data.clean_controller_target()
+        data.clean_aoi_target('controller')
         data.interpolate_AOI_objects('controller')
-        # data.calculate_gaze_times() #TODO write method also for controller objects
+        data.calculate_aoi_times('controller')
 
+        data.add_seating_information()
         data.calculate_head_directionY_angle()
 
         data.add_disengagement_information()

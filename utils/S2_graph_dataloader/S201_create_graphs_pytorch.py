@@ -35,13 +35,11 @@ class Datasets:
     def get_ID(self):
         return self.ID
 
-    def get_y(self): #TODO change for comlexity
-        #y = int(0)
-        #if self.dft['condition'].iloc[0] == 'E':
-        #    y = int(0)
-        #if self.dft['condition'].iloc[0] == 'C':
-        #    y = int(1)
-        return int(self.dft['condition'].iloc[0])
+    def get_y(self, target):
+        if target == 'complexity':
+            return int(self.dft['Complexity'].iloc[0])
+        if target == 'expertise':
+            return int(self.dft['ExpertLevel'].iloc[0])
 
     def create_undirected_graph_with_dataframe(self, edge_attr):
         matrix = self.dft[['Source', 'Target']].to_numpy()
@@ -94,10 +92,12 @@ class Datasets:
             degree_centrality = degree_centrality.reset_index()
             df_lst.append(degree_centrality)
 
+        node_clique_number_lst = list()
         if 'node_clique_number' in structural_variable_names:
             node_clique_number = nx.node_clique_number(self.G)
             node_clique_number = pd.DataFrame.from_dict(node_clique_number, orient='index')
             node_clique_number = node_clique_number.reset_index()
+            df_lst.append(node_clique_number)
 
         if len(structural_variable_names) == 0:
             return None
@@ -110,13 +110,13 @@ class Datasets:
         if len(structural_variable_names) > 1:
             df = df_lst[0]
             for i in range(1, len(df_lst)):
-                df = df.merge(df_lst[i], on='Node')
+                df = df.merge(df_lst[i], on='index')
                 df.reset_index()
             df.columns = ['Node'] + structural_variable_names
             return df
 
     def create_graph(self, edge_attribute_names, node_attribute_names, structural_variable_names):
-        y = self.get_y()
+        y = self.get_y(target='complexity')
         edge_attr = ['weight'] + edge_attribute_names
 
         aoi_lst = ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B',
@@ -127,25 +127,25 @@ class Datasets:
         self.dft = dftt.groupby(['Source', 'Target']).sum().reset_index()
 
         # Fill missing edeges with zero
-        #for source in aoi_lst:
-        #    for target in aoi_lst:
-        #        if source != target:
-        #            if np.logical_and(source not in self.dft['Source'].values, target not in self.dft['Target'].values):
-        #                zeros = [0] * (len(edge_attribute_names) + 1)
-        #                self.dft.loc[len(self.dft)] = [source, target] + zeros
+        for source in aoi_lst:
+            for target in aoi_lst:
+                if source != target:
+                    if np.logical_and(source not in self.dft['Source'].values, target not in self.dft['Target'].values):
+                        zeros = [0] * (len(edge_attribute_names) + 1)
+                        self.dft.loc[len(self.dft)] = [source, target] + zeros
 
         # Modify node dataframe
         dfnn = pd.concat([self.dfn[['Node']], self.dfn[node_attribute_names]], axis=1)
         self.dfn = dfnn.groupby(['Node']).sum().reset_index()
 
         # Fill missing nodes with zero
-        #for aoi in aoi_lst:
-        #    if aoi not in self.dfn['Node'].values:
-        #        zeros = [0] * len(node_attribute_names)
-        #        self.dfn.loc[len(self.dfn)] = [aoi] + zeros
+        for aoi in aoi_lst:
+            if aoi not in self.dfn['Node'].values:
+                zeros = [0] * len(node_attribute_names)
+                self.dfn.loc[len(self.dfn)] = [aoi] + zeros
 
         # Create graph
-        self.create_directed_graph_with_networkx(edge_attr)
+        self.create_undirected_graph_with_networkx(edge_attr)
 
         # Add graph structural variables as node features
         structural_variables = self.calculate_structural_variables(structural_variable_names)
@@ -179,8 +179,9 @@ def create_graphs(project_path):
 
         name = trans_name.split('.')[0].rsplit('_', 1)[0]
         if len(data.get_data()) != 0:
-            edge_attribute_names = ['trans_duration']
-            node_attribute_names = ['AOI_duration', 'clicked', 'pupil_diameter']
-            structural_variable_names = ['degree_centrality']  # , 'node_clique_number']
+            edge_attribute_names = ['trans_duration', 'head_rotation_amplitude']
+            node_attribute_names = ['AOI_duration', 'clicked', 'pupil_diameter', 'controller_duration_on_AOI',
+                                    'distance_to_aoi', 'seating_row_aoi', 'seating_loc_aoi']
+            structural_variable_names = ['degree_centrality','node_clique_number']
             graph = data.create_graph(edge_attribute_names, node_attribute_names, structural_variable_names)
             torch.save(graph, project_path + '\\data\\graphs\\' + name + '.pt')

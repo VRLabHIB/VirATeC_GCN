@@ -1,0 +1,6 @@
+ID,ExpertLevel,Complexity,30sInterval,duration_start,Node,AOI_duration,clicked,pupil_diameter,click_duration?,distance_to_aoi,controller_direction(pointing)_angle,controller_duration_on_AOI,duration_time_until_first fixation
+016,0,0,30,30.02067,PB,20.19039,0,-0.27049205843923524,,,,,
+016,0,0,30,47.92427,1B,0.0444000000000031,0,-0.24342155249447583,,,,,
+016,0,0,30,48.22513,2A,0.3322700000000012,0,-0.05384098820876158,,,,,
+016,0,0,30,48.5574,2B,0.3662500000000008,0,0.004738434518511222,,,,,
+016,0,0,30,49.28917,PB,14.760670000000005,0,-0.3424107899907322,,,,,
