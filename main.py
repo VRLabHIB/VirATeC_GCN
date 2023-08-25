@@ -12,9 +12,9 @@ if __name__ == '__main__':
     project_path = os.path.abspath(os.getcwd())
     #S101_preprocessing.preprocess_data()
 
-    S102_scanpaths.create_all_transition_datasets()
+    #S102_scanpaths.create_all_transition_datasets()
 
-    S201_create_graphs_pytorch.create_graphs(project_path)
+    #S201_create_graphs_pytorch.create_graphs(project_path)
 
     dataset = S202_dataloader.load_graphs(project_path)
 

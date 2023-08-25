@@ -20,8 +20,8 @@ class FullSessionDataset:
         self.ID = identifier
         self.project_path = project_path
 
-        self.starts = np.arange(0, 601, 30)
-        self.ends = np.arange(30, 631, 30)
+        self.starts = np.arange(0, 601, 10)
+        self.ends = np.arange(30, 631, 10)
         self.df_lst = []
 
     def get_data(self):
@@ -38,9 +38,11 @@ class FullSessionDataset:
 
         baselines_pupil_diameter = [np.nanmean(self.df['LeftPupilSize']), np.nanmean(self.df['RightPupilSize'])]
 
+        t = self.df.copy()
         # Remove most variables to speed up the process and rename object variables
-        self.df = self.df[['Time', 'GazeTargetObject', 'GazeTargetObjectTimes', 'SituationalComplexity',
+        self.df = self.df[['Time', 'TimeDiff', 'GazeTargetObject', 'GazeTargetObjectTimes', 'SituationalComplexity',
                            'ControllerClicked', 'LeftPupilSize', 'RightPupilSize', 'ExpertLevel', 'HeadDirectionYAngle',
+                           'SeatingRowGazeTarget', 'SeatingLocGazeTarget', 'RayDistanceGaze', 'ControllerTargetObject',
                            '1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B',
                            '7A', '7B', '8A', '8B', '9A', '9B']].copy()
 
@@ -93,11 +95,11 @@ class FullSessionDataset:
             aoi_duration_lst_node = list()
             clicked_lst_node = list()
             pupil_diameter_lst_node = list()
-            controller_duration_on_aoi_lst_node = list() #TODO
-            distance_to_aoi_lst_node = list() #TODO
+            controller_duration_on_aoi_lst_node = list()
+            distance_to_aoi_lst_node = list()
 
-            seating_row_aoi_lst_node = list() #TODO
-            seating_loc_aoi_lst_node = list() #TODO
+            seating_row_aoi_lst_node = list()
+            seating_loc_aoi_lst_node = list()
 
             # First source
             source = dfsub['GazeTargetObject'].iloc[0]
@@ -134,9 +136,24 @@ class FullSessionDataset:
                     aoi_duration = dfs['GazeTargetObjectTimes'].iloc[0]
                     aoi_duration_lst_node.append(aoi_duration)
 
+                    # Seating Position
+                    seating_row_aoi_lst_node.append(dfs['SeatingRowGazeTarget'].iloc[0])
+                    seating_loc_aoi_lst_node.append(dfs['SeatingLocGazeTarget'].iloc[0])
+
+                    # Average distance to gazes object
+                    avg_distance = np.nanmean(dfs['RayDistanceGaze'])
+                    distance_to_aoi_lst_node.append(avg_distance)
+
+                    # Check how duration of controller pointed at same AOI
+                    dfc = dfs[dfs['ControllerTargetObject'] == source]
+                    if len(dfc) == 0:
+                        controller_duration_on_aoi_lst_node.append(0)
+                    if len(dfc) > 0:
+                        controller_duration_on_aoi_lst_node.append(np.sum(dfc['TimeDiff']))
+
                     # Clicks on AOI
                     if any(dfs['ControllerClicked']):
-                        clicked_lst_node.append(1)
+                        clicked_lst_node.append(len(dfs[dfs['ControllerClicked']]))
                     else:
                         clicked_lst_node.append(0)
 
@@ -152,7 +169,7 @@ class FullSessionDataset:
                     index -= index  # reset index
 
             # Last AOI in dataframe (not covert by the loop)
-            dfs = dfsub.iloc[i - index: i+1]
+            dfs = dfsub.iloc[i - index: i + 1]
 
             id_lst_node.append(identifier)
             complex_lst_node.append(complexity)
@@ -161,8 +178,24 @@ class FullSessionDataset:
             duration_start_lst_node.append(dfs['Time'].iloc[0])
             source_lst_node.append(source)
 
+            # AOI duration
             aoi_duration = dfs['GazeTargetObjectTimes'].iloc[0]
             aoi_duration_lst_node.append(aoi_duration)
+
+            # Seating Position
+            seating_row_aoi_lst_node.append(dfs['SeatingRowGazeTarget'].iloc[0])
+            seating_loc_aoi_lst_node.append(dfs['SeatingLocGazeTarget'].iloc[0])
+
+            # Average distance to gazes object
+            avg_distance = np.nanmean(dfs['RayDistanceGaze'])
+            distance_to_aoi_lst_node.append(avg_distance)
+
+            # Check how duration of controller pointed at same AOI
+            dfc = dfs[dfs['ControllerTargetObject'] == source]
+            if len(dfc) == 0:
+                controller_duration_on_aoi_lst_node.append(0)
+            if len(dfc) > 0:
+                controller_duration_on_aoi_lst_node.append(np.sum(dfc['TimeDiff']))
 
             # Clicks on AOI
             if any(dfs['ControllerClicked']):
@@ -178,7 +211,6 @@ class FullSessionDataset:
             mean_pupil_diameter = np.nanmean(df_p, axis=1)
             pupil_diameter_lst_node.append(np.nanmean(mean_pupil_diameter))
 
-
             placeholder_node = [np.nan] * len(id_lst_node)
             placeholder_edge = [np.nan] * len(id_lst_edge)
 
@@ -189,14 +221,14 @@ class FullSessionDataset:
                                     'AOI_duration': aoi_duration_lst_node,
                                     'clicked': clicked_lst_node,
                                     'pupil_diameter': pupil_diameter_lst_node,
-                                    'controller_duration_on_AOI': controller_duration_on_aoi_lst_node,
+                                    'controller_duration_on_aoi': controller_duration_on_aoi_lst_node,
                                     'distance_to_aoi': distance_to_aoi_lst_node,
                                     'seating_row_aoi': seating_row_aoi_lst_node,
                                     'seating_loc_aoi': seating_loc_aoi_lst_node,
                                     'controller_direction(pointing)_angle': placeholder_node,
                                     'duration_time_until_first fixation': placeholder_node,
                                     })
-            df_trans = pd.DataFrame({'ID': id_lst_edge,  'ExpertLevel': expert_lst_edge, 'Complexity': complex_lst_edge,
+            df_trans = pd.DataFrame({'ID': id_lst_edge, 'ExpertLevel': expert_lst_edge, 'Complexity': complex_lst_edge,
                                      '30sTnterval': interval_lst_edge, 'start_transition': trans_start_lst_edge,
                                      'Source': source_lst_edge, 'Target': target_lst_edge, 'Weight': weight_lst_edge,
                                      'trans_duration': trans_dur_lst_edge,

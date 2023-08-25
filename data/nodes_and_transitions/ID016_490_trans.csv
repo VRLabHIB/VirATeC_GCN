@@ -1,0 +1,4 @@
+ID,ExpertLevel,Complexity,30sTnterval,start_transition,Source,Target,Weight,trans_duration,head_rotation_amplitude,trans_amplitude,trans_velocity
+016,0,1,490,503.9645,PB,4B,1,0.7513999999999896,86.16821588434647,,
+016,0,1,490,505.1674,4B,4A,1,0.2340000000000373,2.78054881695698,,
+016,0,1,490,507.9662,4A,PB,1,0.5263999999999669,72.63534917143053,,

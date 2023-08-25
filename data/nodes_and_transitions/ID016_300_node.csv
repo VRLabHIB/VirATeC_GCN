@@ -1,2 +1,2 @@
-ID,ExpertLevel,Complexity,30sInterval,duration_start,Node,AOI_duration,clicked,pupil_diameter,click_duration?,distance_to_aoi,controller_direction(pointing)_angle,controller_duration_on_AOI,duration_time_until_first fixation
-016,0,1,300,300.0056,PB,6.175999999999988,0,-0.1331472544270552,,,,,
+ID,ExpertLevel,Complexity,30sInterval,duration_start,Node,AOI_duration,clicked,pupil_diameter,controller_duration_on_aoi,distance_to_aoi,seating_row_aoi,seating_loc_aoi,controller_direction(pointing)_angle,duration_time_until_first fixation
+016,0,1,300,300.0056,PB,6.175999999999988,0,-0.1331472544270552,0,1.941093639536893,0.0,0.0,,

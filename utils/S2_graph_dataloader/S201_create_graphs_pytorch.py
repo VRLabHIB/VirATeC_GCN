@@ -116,7 +116,7 @@ class Datasets:
             return df
 
     def create_graph(self, edge_attribute_names, node_attribute_names, structural_variable_names):
-        y = self.get_y(target='complexity')
+        y = self.get_y(target='expertise')
         edge_attr = ['weight'] + edge_attribute_names
 
         aoi_lst = ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B',
@@ -180,7 +180,7 @@ def create_graphs(project_path):
         name = trans_name.split('.')[0].rsplit('_', 1)[0]
         if len(data.get_data()) != 0:
             edge_attribute_names = ['trans_duration', 'head_rotation_amplitude']
-            node_attribute_names = ['AOI_duration', 'clicked', 'pupil_diameter', 'controller_duration_on_AOI',
+            node_attribute_names = ['AOI_duration', 'clicked', 'pupil_diameter', 'controller_duration_on_aoi',
                                     'distance_to_aoi', 'seating_row_aoi', 'seating_loc_aoi']
             structural_variable_names = ['degree_centrality','node_clique_number']
             graph = data.create_graph(edge_attribute_names, node_attribute_names, structural_variable_names)

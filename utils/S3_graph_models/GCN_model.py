@@ -8,7 +8,7 @@ from torch.nn import Linear
 import torch.nn.functional as F
 from torch.nn import BatchNorm1d, Softmax
 from torch_geometric.nn import GCNConv, GraphConv, TAGConv, GraphNorm, PairNorm
-from torch_geometric.nn.conv import NNConv
+from torch_geometric.nn.conv import NNConv, GeneralConv
 from torch_geometric.nn import global_mean_pool, global_add_pool, PANPooling, global_max_pool
 import torch.nn.init as init
 from torch import nn
@@ -18,12 +18,13 @@ from torch_geometric.utils.convert import to_networkx
 import networkx as nx
 import matplotlib.pyplot as plt
 
+
 def run_GCN_model(dataset):
     train_test_split = 0.8
-    batch_size = 20
-    hidden_channels = 25
+    batch_size = 40
+    hidden_channels = 15
     learning_rate = 0.01
-    nepoch = 250
+    nepoch = 10000
 
     # torch.manual_seed(12345)
     # random.seed(12345)
@@ -39,7 +40,7 @@ def run_GCN_model(dataset):
     n_label_0 = len(df_labels[df_labels['label'] == 0])
 
     ratio = n_label_1 / len(dataset)
-    print('Class balance: ', np.round(ratio,2))
+    print('Class balance: ', np.round(ratio, 2))
 
     train_dataset = dataset[:int(train_test_split * len(dataset))]
     test_dataset = dataset[int(train_test_split * len(dataset)):]
@@ -66,22 +67,24 @@ def run_GCN_model(dataset):
             self.edge_model1 = nn.Sequential(
                 Linear(3, 50),
                 nn.ReLU(),
-                Linear(50, num_node_features*hidden_channels),
+                Linear(50, num_node_features * hidden_channels),
             )
             self.edge_model2 = nn.Sequential(
                 Linear(num_node_features, 50),
                 nn.ReLU(),
-                Linear(50, hidden_channels*hidden_channels),
+                Linear(50, hidden_channels * hidden_channels),
             )
 
-            self.conv1 = NNConv(num_node_features, hidden_channels, self.edge_model1)  # 1= num node features
+            self.conv1 = GeneralConv(in_channels=num_node_features, out_channels=hidden_channels,
+                                     in_edge_channels=3)  # 1= num node features
             self.norm1 = GraphNorm(hidden_channels)
 
-            self.conv2 = TAGConv(hidden_channels, hidden_channels)
+            self.conv2 = GeneralConv(in_channels=hidden_channels, out_channels=hidden_channels,
+                                     in_edge_channels=3)
             self.norm2 = GraphNorm(hidden_channels)
 
-            #self.conv3 = NNConv(hidden_channels * 2, hidden_channels)
-            #self.norm3 = PairNorm(hidden_channels)
+            self.conv3 = NNConv(hidden_channels, hidden_channels, self.edge_model2)
+            # self.norm3 = PairNorm(hidden_channels)
 
             self.lin = Linear(hidden_channels, 2)  # 2= num classes
             self.soft = Softmax(dim=1)
@@ -92,7 +95,7 @@ def run_GCN_model(dataset):
             x = x.relu()
             x = self.norm1(x)
 
-            x = self.conv2(x, edge_index)
+            x = self.conv2(x, edge_index, edge_attribute)
             x = x.relu()
             x = self.norm2(x)
 
@@ -102,10 +105,10 @@ def run_GCN_model(dataset):
 
             # 2. Readout layer
             x = global_mean_pool(x, batch)  # [batch_size, hidden_channels]
-            #x = x.relu()
+            # x = x.relu()
 
             # 3. Apply a final classifier
-            x = F.dropout(x, p=0.2, training=self.training)
+            x = F.dropout(x, p=0.5, training=self.training)
             x = self.lin(x)
             x = self.soft(x)
 
