@@ -6,8 +6,8 @@ import torch
 from utils.helper import locate_graph_data
 
 
-def load_graphs(project_path):
-    data_path = project_path + '\\data\\graphs\\'
+def load_graphs(project_path, target):
+    data_path = project_path + '\\data\\graphs\\{}\\'.format(target)
     data_lst = locate_graph_data(project_path)
 
     print('Load Graph Datasets:')

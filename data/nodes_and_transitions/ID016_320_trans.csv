@@ -1,4 +1,0 @@
-ID,ExpertLevel,Complexity,30sTnterval,start_transition,Source,Target,Weight,trans_duration,head_rotation_amplitude,trans_amplitude,trans_velocity
-016,0,1,320,348.1252,5A,2A,1,0.16669999999999163,0.8312681518672136,,
-016,0,1,320,348.4583,2A,8A,1,0.06700000000000728,1.1018823061970267,,
-016,0,1,320,348.8921,8A,5A,1,0.033499999999946795,2.0669993089328997,,

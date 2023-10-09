@@ -6,10 +6,22 @@ import torch
 
 ## for from networkx function:
 from collections import defaultdict
-from typing import Any,  List, Optional,  Union
+from typing import Any, List, Optional, Union
 
 from torch import Tensor
 import torch_geometric
+
+
+def delete_files_in_directory(directory_path):
+    try:
+        files = os.listdir(directory_path)
+        for file in files:
+            file_path = os.path.join(directory_path, file)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+        print("All files deleted successfully.")
+    except OSError:
+        print("Error occurred while deleting files.")
 
 
 def locate_raw_data():
@@ -41,6 +53,7 @@ def locate_transition_data(project_path):
     df_lst['ID'] = df_lst['name'].str.split('.', expand=True).iloc[:, 0]
 
     return df_lst
+
 
 def locate_node_data(project_path):
     data_path = project_path + '\\data\\nodes_and_transitions\\'
@@ -135,9 +148,9 @@ def add_expertise_levels(dff):
 
 
 def from_networkx(
-    G: Any,
-    group_node_attrs: Optional[Union[List[str], all]] = None,
-    group_edge_attrs: Optional[Union[List[str], all]] = None,
+        G: Any,
+        group_node_attrs: Optional[Union[List[str], all]] = None,
+        group_edge_attrs: Optional[Union[List[str], all]] = None,
 ) -> 'torch_geometric.data.Data':
     r"""Converts a :obj:`networkx.Graph` or :obj:`networkx.DiGraph` to a
     :class:`torch_geometric.data.Data` instance.
@@ -247,4 +260,3 @@ def from_networkx(
         data.num_nodes = G.number_of_nodes()
 
     return data
-

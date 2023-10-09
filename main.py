@@ -7,30 +7,34 @@ from utils.S2_graph_dataloader import S201_create_graphs_pytorch
 from utils.S2_graph_dataloader import S202_dataloader
 
 from utils.S3_graph_models import GCN_model
+from utils.S3_graph_models import GCN_model_node_classification
 
 if __name__ == '__main__':
     project_path = os.path.abspath(os.getcwd())
-    #S101_preprocessing.preprocess_data()
+    # S101_preprocessing.preprocess_data()
 
-    #S102_scanpaths.create_all_transition_datasets()
+    target = 'expertise'  # 'clicked'
+    structural_variables = False
+    fill_graph_with_zero_nodes = False
 
-    #S201_create_graphs_pytorch.create_graphs(project_path)
+    edge_attribute_names = ['trans_duration', 'head_rotation_amplitude', 'trans_amplitude', 'trans_velocity', 'temporal_connect']
 
-    dataset = S202_dataloader.load_graphs(project_path)
+    node_attribute_names = ['AOI_duration', 'clicked', 'pupil_diameter', 'controller_duration_on_aoi',
+                            'distance_to_aoi', 'seating_row_aoi', 'seating_loc_aoi',
+                            'duration_time_until_first_fixation',
+                            'active_disruption', 'passive_disruption']
 
-    GCN_model.run_GCN_model(dataset)
-    print(' ')
+    # S102_scanpaths.create_all_transition_datasets(target)
 
+    S201_create_graphs_pytorch.create_graphs(project_path, target=target, edge_attribute_names=edge_attribute_names,
+                                             node_attribute_names=node_attribute_names,
+                                             structural_variables=structural_variables,
+                                             fill_graph_with_zero_nodes=fill_graph_with_zero_nodes, single_intervals=False)
 
+    dataset = S202_dataloader.load_graphs(project_path, target)
 
-    # mat_lst, graph_list, cond_lst, ID_lst = S105_adjacency_matix.create_matrices_and_graphs()
-
-    # S106_graph_features.create_feature_dataframe
-
-    #data_path = project_path + '//data//'
-    #df_input = pd.read_csv(data_path + 'nodes_and_transitions.csv')
-    # df_input = pd.read_csv(data_path + 'FeatureDataset.csv')
-
-    #df_input = add_expertise_levels(df_input)
-
+    if target in ['complexity', 'expertise']:
+        GCN_model.run_GCN_model(dataset)
+    if target in ['disruption', 'clicked']:
+        GCN_model_node_classification.run_GCN_model(dataset)
     print(' ')

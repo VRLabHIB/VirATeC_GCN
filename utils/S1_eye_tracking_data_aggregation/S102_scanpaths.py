@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 
 from utils.helper import locate_processed_data
+from utils.helper import delete_files_in_directory
 
 
 # Class to calculate features from the dataframes / processing pipline is stated below
@@ -14,14 +15,20 @@ def calculate_head_direction_amplitude(df_sub):
 
 
 class FullSessionDataset:
-    def __init__(self, name, identifier, project_path):
+    def __init__(self, name, identifier, project_path, save_path, target):
         os.chdir(r'V:\VirATeC\data\VirATeC_GCN\1_full_sessions')
         self.df = pd.read_csv(name, low_memory=False)
         self.ID = identifier
         self.project_path = project_path
+        self.save_path = save_path
 
-        self.starts = np.arange(0, 601, 10)
-        self.ends = np.arange(30, 631, 10)
+        if target == 'complexity':
+            self.starts = np.arange(0, 601, 30)
+            self.ends = np.arange(30, 631, 30)
+        if target != 'complexity':
+            self.starts = np.arange(0, 571, 30) # 601
+            self.ends = np.arange(30, 601, 30)  #631
+
         self.df_lst = []
 
     def get_data(self):
@@ -34,8 +41,6 @@ class FullSessionDataset:
         return self.ID
 
     def create_one_transition_dataset(self):
-        save_path = self.project_path + '//data//nodes_and_transitions//'
-
         baselines_pupil_diameter = [np.nanmean(self.df['LeftPupilSize']), np.nanmean(self.df['RightPupilSize'])]
 
         t = self.df.copy()
@@ -43,6 +48,7 @@ class FullSessionDataset:
         self.df = self.df[['Time', 'TimeDiff', 'GazeTargetObject', 'GazeTargetObjectTimes', 'SituationalComplexity',
                            'ControllerClicked', 'LeftPupilSize', 'RightPupilSize', 'ExpertLevel', 'HeadDirectionYAngle',
                            'SeatingRowGazeTarget', 'SeatingLocGazeTarget', 'RayDistanceGaze', 'ControllerTargetObject',
+                           'GazeHitPointX', 'GazeHitPointY', 'GazeHitPointZ',
                            '1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B',
                            '7A', '7B', '8A', '8B', '9A', '9B']].copy()
 
@@ -52,13 +58,13 @@ class FullSessionDataset:
 
         self.df = self.df[self.df['GazeTargetObject'] != 'none']
 
-        for start in self.starts:
+        for start, end in zip(self.starts, self.ends):
             # Get ID as number
             identifier = self.ID[2] + self.ID[3] + self.ID[4]
             interval = start  # Save start for interval identifier
 
             # Select time interval and save target variable (complexity)
-            dfsub = self.df[np.logical_and(self.df['Time'] >= start, self.df['Time'] < start + 30)].copy()
+            dfsub = self.df[np.logical_and(self.df['Time'] >= start, self.df['Time'] < end)].copy()
             expertise = dfsub['ExpertLevel'].iloc[0]
             complexity = dfsub['SituationalComplexity'].iloc[0]
 
@@ -83,6 +89,8 @@ class FullSessionDataset:
             weight_lst_edge = list()
 
             head_amplitude_lst_edge = list()
+            trans_amplitude_lst = list()
+            transition_velocity_lst = list()
 
             # List of node attributes
             id_lst_node = list()
@@ -101,6 +109,9 @@ class FullSessionDataset:
             seating_row_aoi_lst_node = list()
             seating_loc_aoi_lst_node = list()
 
+            active_disruption_lst = list()
+            passive_disruption_lst = list()
+
             # First source
             source = dfsub['GazeTargetObject'].iloc[0]
 
@@ -109,7 +120,7 @@ class FullSessionDataset:
                 index += 1
                 if source != dfsub['GazeTargetObject'].iloc[i]:
                     trans_dur = dfsub['Time'].iloc[i] - dfsub['Time'].iloc[i - 1]
-                    if trans_dur < 1:
+                    if trans_dur < 1000:
                         trans_start_lst_edge.append(dfsub['Time'].iloc[i - 1])
                         trans_dur_lst_edge.append(trans_dur)
                         source_lst_edge.append(source)
@@ -121,6 +132,14 @@ class FullSessionDataset:
                         interval_lst_edge.append(interval)
                         head_amplitude_lst_edge.append(np.abs(dfsub['HeadDirectionYAngle'].iloc[i]
                                                               - dfsub['HeadDirectionYAngle'].iloc[i - 1]))
+
+                        source_hitpoint = self.df[['GazeHitPointX', 'GazeHitPointY', 'GazeHitPointZ']].iloc[i-1].to_numpy()
+                        target_hitpoint = self.df[['GazeHitPointX', 'GazeHitPointY', 'GazeHitPointZ']].iloc[i].to_numpy()
+                        trans_amplitude = np.sum((target_hitpoint - source_hitpoint) ** 2)
+                        trans_amplitude = np.sqrt(trans_amplitude)
+                        trans_amplitude_lst.append(trans_amplitude)
+
+                        transition_velocity_lst.append(trans_amplitude/trans_dur)
 
                     #### Select AOI interval ####
                     dfs = dfsub.iloc[i - index:i]
@@ -164,6 +183,29 @@ class FullSessionDataset:
 
                     mean_pupil_diameter = np.nanmean(df_p, axis=1)
                     pupil_diameter_lst_node.append(np.nanmean(mean_pupil_diameter))
+
+                    if source != 'PB':
+                        dis = dfs[source]
+                        dis = dis[dis.notna()]
+                        if len(dis) == 0:
+                            active_disruption_lst.append(0)
+                            passive_disruption_lst.append(0)
+                        if len(dis) != 0:
+                            active = dis[dis.str.startswith('IA')]
+                            if len(active) != 0:
+                                active_disruption_lst.append(1)
+                            if len(active) == 0:
+                                active_disruption_lst.append(0)
+
+                            passive = dis[dis.str.startswith('P')]
+                            if len(passive) != 0:
+                                passive_disruption_lst.append(1)
+                            if len(passive) == 0:
+                                passive_disruption_lst.append(0)
+
+                    if source == 'PB':
+                        active_disruption_lst.append(0)
+                        passive_disruption_lst.append(0)
 
                     source = dfsub['GazeTargetObject'].iloc[i]
                     index -= index  # reset index
@@ -211,8 +253,28 @@ class FullSessionDataset:
             mean_pupil_diameter = np.nanmean(df_p, axis=1)
             pupil_diameter_lst_node.append(np.nanmean(mean_pupil_diameter))
 
-            placeholder_node = [np.nan] * len(id_lst_node)
-            placeholder_edge = [np.nan] * len(id_lst_edge)
+            if source != 'PB':
+                dis = dfs[source]
+                dis = dis[dis.notna()]
+                if len(dis) == 0:
+                    active_disruption_lst.append(0)
+                    passive_disruption_lst.append(0)
+                if len(dis) != 0:
+                    active = dis[dis.str.startswith('IA')]
+                    if len(active) != 0:
+                        active_disruption_lst.append(1)
+                    if len(active) == 0:
+                        active_disruption_lst.append(0)
+
+                    passive = dis[dis.str.startswith('P')]
+                    if len(passive) != 0:
+                        passive_disruption_lst.append(1)
+                    if len(passive) == 0:
+                        passive_disruption_lst.append(0)
+
+            if source == 'PB':
+                active_disruption_lst.append(0)
+                passive_disruption_lst.append(0)
 
             #### Create both dataframes (node and egdes) ####
             df_node = pd.DataFrame({'ID': id_lst_node, 'ExpertLevel': expert_lst_node, 'Complexity': complex_lst_node,
@@ -225,27 +287,34 @@ class FullSessionDataset:
                                     'distance_to_aoi': distance_to_aoi_lst_node,
                                     'seating_row_aoi': seating_row_aoi_lst_node,
                                     'seating_loc_aoi': seating_loc_aoi_lst_node,
-                                    'controller_direction(pointing)_angle': placeholder_node,
-                                    'duration_time_until_first fixation': placeholder_node,
+                                    'active_disruption': active_disruption_lst,
+                                    'passive_disruption': passive_disruption_lst
                                     })
+                                    # 'controller_direction_angle': controller_direction_lst
+
+            df_node['duration_time_until_first_fixation'] = df_node['duration_start'].values - df_node[
+                '30sInterval'].values
+
             df_trans = pd.DataFrame({'ID': id_lst_edge, 'ExpertLevel': expert_lst_edge, 'Complexity': complex_lst_edge,
                                      '30sTnterval': interval_lst_edge, 'start_transition': trans_start_lst_edge,
                                      'Source': source_lst_edge, 'Target': target_lst_edge, 'Weight': weight_lst_edge,
                                      'trans_duration': trans_dur_lst_edge,
                                      'head_rotation_amplitude': head_amplitude_lst_edge,
-                                     'trans_amplitude': placeholder_edge,
-                                     'trans_velocity': placeholder_edge,
+                                     'trans_amplitude': trans_amplitude_lst,
+                                     'trans_velocity': transition_velocity_lst,
                                      })
 
-            df_trans.to_csv(save_path + 'ID' + str(identifier) + '_' + str(interval) + '_trans.csv',
+            df_trans.to_csv(self.save_path + 'ID' + str(identifier) + '_' + str(interval) + '_trans.csv',
                             index=False)
-            df_node.to_csv(save_path + 'ID' + str(identifier) + '_' + str(interval) + '_node.csv',
+            df_node.to_csv(self.save_path + 'ID' + str(identifier) + '_' + str(interval) + '_node.csv',
                            index=False)
 
 
-def create_all_transition_datasets():
+def create_all_transition_datasets(target):
     project_path = os.path.abspath(os.getcwd())
     data_lst = locate_processed_data()
+    save_path = project_path + '//data//nodes_and_transitions//'
+    delete_files_in_directory(save_path)
 
     print('Create Transition Datasets:')
     for i in range(len(data_lst)):
@@ -253,6 +322,6 @@ def create_all_transition_datasets():
         identifier = data_lst['ID'].iloc[i]
         print('ID {}'.format(identifier))
 
-        data = FullSessionDataset(name, identifier, project_path)
+        data = FullSessionDataset(name, identifier, project_path, save_path, target)
         # creates transition matrices and saves them into //data//nodes_and_transitions//
         data.create_one_transition_dataset()
