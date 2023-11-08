@@ -1,4 +1,6 @@
 # GCN_Viratec
+## Idea
+Training graphical neural networks on gaze transitions and fixation information. 
 
 ## Links and Literature
 
