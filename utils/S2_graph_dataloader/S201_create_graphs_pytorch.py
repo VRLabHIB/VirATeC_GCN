@@ -42,7 +42,7 @@ def load_transition_dataset(trans_names, identifier):
             row2 = [1, 0, 0, 0, 0, 1]
 
             for aoi in aoi_lst:
-                row = row1 + [aoi + '_' + interval1, aoi + '_' + interval2] + row2
+                row = row1 + [aoi + interval1, aoi + interval2] + row2
                 dft.loc[len(dft)] = row
 
             interval1 = interval2
@@ -217,12 +217,12 @@ class Datasets:
                             self.dft.loc[len(self.dft)] = [source, target] + zeros
 
         # Modify node dataframe
-        dfnn = pd.concat([self.dfn[['Node']], self.dfn[node_attribute_names]], axis=1)
-        self.dfn = dfnn.groupby('Node').agg({'AOI_duration': np.sum, 'clicked': np.sum, 'pupil_diameter': np.mean,
-                                             'controller_duration_on_aoi': np.sum, 'distance_to_aoi': np.mean,
-                                             'seating_row_aoi': np.mean, 'seating_loc_aoi': np.mean,
-                                             'duration_time_until_first_fixation': np.min, 'active_disruption': np.max,
-                                             'passive_disruption': np.max}).reset_index()
+        #dfnn = pd.concat([self.dfn[['Node']], self.dfn[node_attribute_names]], axis=1)
+        #self.dfn = dfnn.groupby('Node').agg({'AOI_duration': np.sum, 'clicked': np.sum, 'pupil_diameter': np.mean,
+        #                                     'controller_duration_on_aoi': np.sum, 'distance_to_aoi': np.mean,
+        #                                     'seating_row_aoi': np.mean, 'seating_loc_aoi': np.mean,
+        #                                     'duration_time_until_first_fixation': np.min, 'active_disruption': np.max,
+        #                                     'passive_disruption': np.max}).reset_index()
 
 
         if target == 'disruptions':
@@ -258,7 +258,7 @@ class Datasets:
 
         G = self.get_networkx_graph()
         # Create Data format to save
-        data = from_networkx(self.G, group_node_attrs=node_attribute_names, group_edge_attrs=edge_attr)
+        data = from_networkx(self.G, group_node_attrs=node_attribute_names, group_edge_attrs=edge_attr) #TODO trouble shooting
         data['y'] = y  # Add target
         edge_weights = data['edge_attr'][:, 0]
         data.edge_weight = edge_weights
