@@ -146,15 +146,23 @@ class Datasets:
                         self.G.edges[node, neighbor][attribute] = (D.edges[node, neighbor][attribute]
                                                                    + D.edges[neighbor, node][attribute])
 
-    def add_node_attributes_to_networkx(self, structural_variables):
+    def add_node_attributes_to_networkx(self, structural_variables, target):
         if structural_variables is not None:
             # merge node attributes and structura variables
             self.dfn = self.dfn.merge(structural_variables, on='Node', how='left')
+        dfnx = self.dfn.copy()
+        #aoi_lst = ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B',
+        #           '7A', '7B', '8A', '8B', '9A', '9B', 'PB']
+        #times = np.arange(0, 600, 30)
+        #for i in aoi_lst:
+        #    for time in times:
+        #        if "{}".format(i)+"{}".format(time) not in dfnx['Node'].values:
+        #            dfnx.loc[len(dfnx)] = ["{}".format(i)+"{}".format(time)] + [0]*10
 
-        self.dfn.index = self.dfn['Node']
-        self.dfn = self.dfn.drop(columns=['Node'])
-        self.dfn = self.dfn.transpose()
-        dict = self.dfn.to_dict()
+        dfnx.index = dfnx['Node']
+        dfnx = dfnx.drop(columns=['Node'])
+        dfnx = dfnx.transpose()
+        dict = dfnx.to_dict()
         nx.set_node_attributes(self.G, dict)
 
         G = self.G
@@ -217,12 +225,12 @@ class Datasets:
                             self.dft.loc[len(self.dft)] = [source, target] + zeros
 
         # Modify node dataframe
-        #dfnn = pd.concat([self.dfn[['Node']], self.dfn[node_attribute_names]], axis=1)
-        #self.dfn = dfnn.groupby('Node').agg({'AOI_duration': np.sum, 'clicked': np.sum, 'pupil_diameter': np.mean,
-        #                                     'controller_duration_on_aoi': np.sum, 'distance_to_aoi': np.mean,
-        #                                     'seating_row_aoi': np.mean, 'seating_loc_aoi': np.mean,
-        #                                     'duration_time_until_first_fixation': np.min, 'active_disruption': np.max,
-        #                                     'passive_disruption': np.max}).reset_index()
+        dfnn = pd.concat([self.dfn[['Node']], self.dfn[node_attribute_names]], axis=1)
+        self.dfn = dfnn.groupby('Node').agg({'AOI_duration': np.sum, 'clicked': np.sum, 'pupil_diameter': np.mean,
+                                             'controller_duration_on_aoi': np.sum, 'distance_to_aoi': np.mean,
+                                             'seating_row_aoi': np.mean, 'seating_loc_aoi': np.mean,
+                                             'duration_time_until_first_fixation': np.min, 'active_disruption': np.max,
+                                             'passive_disruption': np.max}).reset_index()
 
 
         if target == 'disruptions':
@@ -246,19 +254,20 @@ class Datasets:
                     self.dft.loc[len(self.dft), 'duration_time_until_first_fixation'] = 30
 
         # Create graph
-        self.create_undirected_graph_with_networkx(edge_attr)
+        #self.create_undirected_graph_with_networkx(edge_attr)
+        self.create_directed_graph_with_networkx(edge_attr)
 
         if not single_intervals:
             # Add graph structural variables as node features
             structural_variables = self.calculate_structural_variables(structural_variable_names)
 
             # Add further node attributes
-            self.add_node_attributes_to_networkx(structural_variables)
-            node_attribute_names = node_attribute_names + structural_variable_names
+            self.add_node_attributes_to_networkx(structural_variables, target)
+            #node_attribute_names = node_attribute_names + structural_variable_names
 
         G = self.get_networkx_graph()
         # Create Data format to save
-        data = from_networkx(self.G, group_node_attrs=node_attribute_names, group_edge_attrs=edge_attr) #TODO trouble shooting
+        data = from_networkx(self.G)#, group_node_attrs=node_attribute_names)# , group_edge_attrs=edge_attr) #TODO trouble shooting
         data['y'] = y  # Add target
         edge_weights = data['edge_attr'][:, 0]
         data.edge_weight = edge_weights

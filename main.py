@@ -20,9 +20,9 @@ if __name__ == '__main__':
     edge_attribute_names = ['trans_duration', 'head_rotation_amplitude', 'trans_amplitude', 'trans_velocity', 'temporal_connect']
 
     node_attribute_names = ['AOI_duration', 'clicked', 'pupil_diameter', 'controller_duration_on_aoi',
-                            'distance_to_aoi', 'seating_row_aoi', 'seating_loc_aoi']#,
-                            #'duration_time_until_first_fixation',
-                            #'active_disruption', 'passive_disruption']
+                            'distance_to_aoi', 'seating_row_aoi', 'seating_loc_aoi',
+                            'duration_time_until_first_fixation',
+                            'active_disruption', 'passive_disruption']
 
     # S102_scanpaths.create_all_transition_datasets(target)
 
