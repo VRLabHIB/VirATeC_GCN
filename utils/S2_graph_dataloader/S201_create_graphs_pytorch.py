@@ -202,8 +202,6 @@ class Datasets:
 
     def create_graph(self, edge_attribute_names, node_attribute_names, structural_variable_names, target,
                      fill_graph_with_zero_nodes, single_intervals):
-        if target in ['complexity', 'expertise']:
-            y = self.get_y(target=target)
 
         edge_attr = ['weight'] + edge_attribute_names
 
@@ -229,9 +227,24 @@ class Datasets:
         self.dfn = dfnn.groupby('Node').agg({'AOI_duration': np.sum, 'clicked': np.sum, 'pupil_diameter': np.mean,
                                              'controller_duration_on_aoi': np.sum, 'distance_to_aoi': np.mean,
                                              'seating_row_aoi': np.mean, 'seating_loc_aoi': np.mean,
-                                             'duration_time_until_first_fixation': np.min, 'active_disruption': np.max,
-                                             'passive_disruption': np.max}).reset_index()
+                                             'duration_time_until_first_fixation': np.min}).reset_index()
+                                             #, 'active_disruption': np.max,
+                                             #'passive_disruption': np.max}).reset_index()
 
+
+        if fill_graph_with_zero_nodes:
+            # Fill missing nodes with zero
+            for aoi in aoi_lst:
+                if aoi not in self.dfn['Node'].values:
+                    zeros = [0] * (len(node_attribute_names)-1)
+                    self.dfn.loc[len(self.dfn)] = [aoi] + zeros + [30]
+
+        self.dft = self.dft.rename(columns={'Target': 'Node'})
+        self.dfn = self.dfn.merge(self.dft.iloc[:, 1:], on='Node', how='left')
+
+        ### Get Target ###
+        if target in ['complexity', 'expertise']:
+            y = self.get_y(target=target)
 
         if target == 'disruptions':
             y = np.where(self.dfn['active_disruption'] == 1, 1,
@@ -245,17 +258,12 @@ class Datasets:
             self.dfn = self.dfn.drop(columns=['clicked'])  # HERE
             node_attribute_names.remove('clicked')  # HERE
 
-        if fill_graph_with_zero_nodes:
-            # Fill missing nodes with zero
-            for aoi in aoi_lst:
-                if aoi not in self.dfn['Node'].values:
-                    zeros = [0] * len(node_attribute_names)
-                    self.dfn.loc[len(self.dfn)] = [aoi] + zeros
-                    self.dft.loc[len(self.dft), 'duration_time_until_first_fixation'] = 30
+        if target == 'disruptions_prob':
+            print(' ')
 
-        # Create graph
-        #self.create_undirected_graph_with_networkx(edge_attr)
-        self.create_directed_graph_with_networkx(edge_attr)
+        ### Create graph ###
+        self.create_undirected_graph_with_networkx(edge_attr)
+        #self.create_directed_graph_with_networkx(edge_attr)
 
         if not single_intervals:
             # Add graph structural variables as node features

@@ -13,23 +13,26 @@ if __name__ == '__main__':
     project_path = os.path.abspath(os.getcwd())
     # S101_preprocessing.preprocess_data()
 
-    target = 'expertise'  # 'clicked'
-    structural_variables = False
-    fill_graph_with_zero_nodes = False
+    target = 'disruptions_prob'  # 'clicked'
+    structural_variables = True
+    fill_graph_with_zero_nodes = True
+    single_intervals = True
 
-    edge_attribute_names = ['trans_duration', 'head_rotation_amplitude', 'trans_amplitude', 'trans_velocity', 'temporal_connect']
+    edge_attribute_names = ['trans_duration', 'head_rotation_amplitude', 'trans_amplitude', 'trans_velocity']#,
+                            #'temporal_connect']
 
     node_attribute_names = ['AOI_duration', 'clicked', 'pupil_diameter', 'controller_duration_on_aoi',
                             'distance_to_aoi', 'seating_row_aoi', 'seating_loc_aoi',
-                            'duration_time_until_first_fixation',
-                            'active_disruption', 'passive_disruption']
+                            'duration_time_until_first_fixation']
+                            #,'active_disruption', 'passive_disruption']
 
     # S102_scanpaths.create_all_transition_datasets(target)
 
     S201_create_graphs_pytorch.create_graphs(project_path, target=target, edge_attribute_names=edge_attribute_names,
                                              node_attribute_names=node_attribute_names,
                                              structural_variables=structural_variables,
-                                             fill_graph_with_zero_nodes=fill_graph_with_zero_nodes, single_intervals=False)
+                                             fill_graph_with_zero_nodes=fill_graph_with_zero_nodes,
+                                             single_intervals=single_intervals)
 
     dataset = S202_dataloader.load_graphs(project_path, target)
 
